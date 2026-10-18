@@ -30,7 +30,10 @@ fi
 : "${NAKAMA_SERVER_KEY:?NAKAMA_SERVER_KEY is required}"
 
 SESSION_ENCRYPTION_KEY="${SESSION_ENCRYPTION_KEY:-$NAKAMA_SERVER_KEY}"
-SESSION_REFRESH_ENCRYPTION_KEY="${SESSION_REFRESH_ENCRYPTION_KEY:-$SESSION_ENCRYPTION_KEY}"
+# Nakama refuses a refresh key identical to the encryption key, so the
+# default is derived from it rather than equal to it. Both must stay stable
+# across restarts or existing sessions are invalidated.
+SESSION_REFRESH_ENCRYPTION_KEY="${SESSION_REFRESH_ENCRYPTION_KEY:-${SESSION_ENCRYPTION_KEY}-refresh}"
 CONSOLE_USERNAME="${CONSOLE_USERNAME:-admin}"
 CONSOLE_PASSWORD="${CONSOLE_PASSWORD:-$NAKAMA_SERVER_KEY}"
 
