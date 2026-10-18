@@ -74,12 +74,14 @@ var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *            "records": [ { "owner_id": "...", "score": 123,
  *                           "username": "...", "metadata": {} } ] }
  *
- * Returns { board, written, failed }.
+ * Returns { board, written, failed, first_error }.
  *
- * `metadata` must be a JSON *string* at the Nakama layer — an object is
- * rejected before routing with
- * `400 proto: invalid value for string type: {`. Callers pass a normal
- * object and it is stringified here.
+ * `metadata` is a plain object at this layer — `leaderboardRecordWrite` is
+ * typed `metadata?: {[key: string]: any}`. The JSON-*string* form belongs to
+ * the HTTP REST API (`POST /v2/leaderboard/{id}`), which this does not use.
+ * Stringifying it here makes every write fail, so it is passed through as
+ * given. `first_error` carries the reason for the first failure so a failed
+ * sync is diagnosable without reading server logs.
  */
 function syncLeaderboardsRpc(ctx, logger, nk, payload) {
   var data = {};
@@ -101,16 +103,13 @@ function syncLeaderboardsRpc(ctx, logger, nk, payload) {
   var records = data.records || [];
   var written = 0;
   var failed = 0;
+  var firstError = null;
 
   records.forEach(function (r) {
     if (!r || !r.owner_id || !UUID_RE.test(String(r.owner_id))) {
       failed += 1;
+      if (firstError === null) firstError = 'owner_id is not a uuid: ' + (r && r.owner_id);
       return;
-    }
-    var metadata = null;
-    if (r.metadata) {
-      metadata =
-        typeof r.metadata === 'string' ? r.metadata : JSON.stringify(r.metadata);
     }
     try {
       // owner_id is the Supabase uid and is stored as given. No Nakama user
@@ -121,11 +120,12 @@ function syncLeaderboardsRpc(ctx, logger, nk, payload) {
         r.username || null,
         Math.max(0, Math.floor(Number(r.score) || 0)),
         0,
-        metadata
+        r.metadata || null
       );
       written += 1;
     } catch (e) {
       failed += 1;
+      if (firstError === null) firstError = String(e);
       logger.warn('leaderboard write failed for ' + r.owner_id + ': ' + e);
     }
   });
@@ -134,6 +134,7 @@ function syncLeaderboardsRpc(ctx, logger, nk, payload) {
     board: board,
     written: written,
     failed: failed,
+    first_error: firstError,
   });
 }
 
