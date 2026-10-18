@@ -3,9 +3,11 @@
 # ============================================
 
 # Database Configuration
+#
+# The address carries the password, so it is NOT set here. start.sh passes
+# it on the command line (--database.address) from DATABASE_URL or from the
+# SUPABASE_DB_* environment variables, which override anything in this file.
 database:
-  address:
-    - "postgres.atojskxrxfsbpeefigtm:l6TuVaUiqmhWbbVO@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require"
   conn_pool_max_size: 20
   conn_pool_min_size: 5
 
@@ -16,8 +18,9 @@ runtime:
   js_cache: true
 
 # Socket Configuration
+#
+# server_key is a credential: start.sh supplies it from NAKAMA_SERVER_KEY.
 socket:
-  server_key: "DaNjI20sbHAZBy3h86xCoTfMleidWELw"
   port: 7350
   max_message_size_bytes: 4096
 
@@ -29,17 +32,21 @@ http:
   read_timeout_ms: 5000
   idle_timeout_ms: 60000
 
-# Session Configuration - USING DIFFERENT KEYS!
+# Session Configuration
+#
+# The encryption keys are credentials: start.sh supplies them from
+# SESSION_ENCRYPTION_KEY and SESSION_REFRESH_ENCRYPTION_KEY, both of which
+# fall back to NAKAMA_SERVER_KEY when unset. Keep them stable across
+# restarts or existing sessions are invalidated.
 session:
   token_expiry_seconds: 7200
   refresh_token_expiry_seconds: 604800
-  encryption_key: "DaNjI20sbHAZBy3h86xCoTfMleidWELw"
-  refresh_encryption_key: "ReFrEsHKeY2024Sup3rSecure7890!@#$%"
 
 # Console Configuration
+#
+# username and password are credentials: start.sh supplies them from
+# CONSOLE_USERNAME and CONSOLE_PASSWORD.
 console:
-  username: "admin"
-  password: "DaNjI20sbHAZBy3h86xCoTfMleidWELw"
   port: 7351
   allowed_origins:
     - "*"
